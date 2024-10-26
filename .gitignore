@@ -1,2 +1,4 @@
 features/*
 sae-auto-interp/*
+.venv
+__pycache__

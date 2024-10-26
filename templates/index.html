@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Visualization</title>
+    <!-- Link to Plotly.js for plotting -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Link to external JavaScript file -->
+    <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
+</head>
+<body>
+    <h1>Syntax Graph</h1>
+    <div id="graphDiv" style="width: 80%; height: 80vh;"></div> <!-- reference graphDiv in scripts.js -->
+
+    <!-- Pass graph data to JavaScript -->
+    <script>
+        const nodes = {{ nodes | tojson }};
+        const edges = {{ edges | tojson }};
+    </script>
+</body>
+</html>
