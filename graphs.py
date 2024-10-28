@@ -39,7 +39,8 @@ def load_activations(path):
     locations = torch.tensor(locations.astype(np.int64))
     return activations, locations
 
-def make_parse_tree(context: list[str]) -> list[list[dict]]:
+#TODO: aggregate indices for parse trees
+def make_parse_tree(context: list[str], act_idx: int) -> list[list[dict]]:
     """
     Takes a list of strings, and returns a list of dictionaries representing a parse tree for the input.
     The dictionaries contain the following keys:
@@ -62,12 +63,24 @@ def make_parse_tree(context: list[str]) -> list[list[dict]]:
         parse_tree.append(node)
     return parse_tree
 
+## Define joint parse tree from individual parse trees.
+def joint_parse_tree(contexts, act_idxs):
+    #we want to aggregate shared POS in preceding and forward contexts.
+    #1. We aggregate context trees no matter what.
+    #2. We combine shared POS while retaining the tokens
+    for context, act_idx in zip(contexts, act_idxs):
+        parse_tree = make_parse_tree(context, act_idx)
+    #TODO
+    return None
+
+
 def make_graph(parse_dict : list[dict]):
     G = nx.DiGraph()
     for token in parse_dict:
-        G.add_node(token['text'])
+        token_id = f'{token['text']} [{token['pos']}]'
+        G.add_node(token_id)
         for child in token['children']:
-            G.add_edge(token['text'], child)
+            G.add_edge(token_id, child)
     pos = nx.spring_layout(G)  # You can also try 'shell_layout', 'circular_layout', etc.
     return G, pos
 
@@ -94,7 +107,9 @@ def visualize_feature(n, activations, locations, tokens, tokenizer, k=5):
         batch = view_batch(int(d['batch']), tokens, tokenizer)
         if batch != None:
             pos = d['position']
-            context = get_context(batch, pos) #todo: figure out better parse tree context e.g. by punct.
-            parse_tree = make_parse_tree(context)
+            n = 5
+            context = get_context(batch, pos, n=n) #todo: figure out better parse tree context e.g. by punct.
+            parse_tree = make_parse_tree(context, n)
             G, pos = make_graph(parse_tree)
             return G, pos
+        
