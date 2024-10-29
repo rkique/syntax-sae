@@ -1,22 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        #graphContainer {
+    display: flex;               /* Use flexbox for layout */
+    flex-direction: row;        /* Arrange children in a row */
+    flex-wrap: wrap;            /* Allow wrapping of graphs to the next line if necessary */
+    justify-content: center;     /* Center the graphs horizontally */
+    align-items: flex-start;    /* Align graphs to the top */
+    gap: 10px;                  /* Space between graphs */
+}
+
+.graphDiv {
+    width: 600px;               /* Set a fixed width for each graph */
+    height: 400px;              /* Set a fixed height for each graph */
+}
+    </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph Visualization</title>
-    <!-- Link to Plotly.js for plotting -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <!-- Link to external JavaScript file -->
-    <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
+    <script>
+        // Embed the graph data into a global variable
+        
+        var graphs = {{ graphs | tojson}}
+        graphs = graphs.map(jsonString => JSON.parse(jsonString));
+    </script>
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </head>
 <body>
-    <h1>Syntax Graph</h1>
-    <div id="graphDiv" style="width: 80%; height: 80vh;"></div> <!-- reference graphDiv in scripts.js -->
-
-    <!-- Pass graph data to JavaScript -->
-    <script>
-        const nodes = {{ nodes | tojson }};
-        const edges = {{ edges | tojson }};
-    </script>
+    <div id="graphContainer" width="100%; height: 100%"></div>
 </body>
 </html>
