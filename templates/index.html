@@ -2,6 +2,20 @@
 <html lang="en">
 <head>
     <style>
+        .graphContextContainer {
+    display: flex;              /* Use flexbox for horizontal alignment */
+    align-items: center;       /* Center align items vertically */
+    margin-bottom: 10px;       /* Space between graph-context pairs */
+}
+
+.graphDiv {
+    width: 60vw;
+}
+
+.contextDiv {
+    margin-left: 10px;         /* Space between the graph and context */
+    /* Additional styles for the context can be added here */
+}
         #graphContainer {
     display: flex;               /* Use flexbox for layout */
     flex-direction: row;        /* Arrange children in a row */
@@ -11,10 +25,6 @@
     gap: 10px;                  /* Space between graphs */
 }
 
-.graphDiv {
-    width: 600px;               /* Set a fixed width for each graph */
-    height: 400px;              /* Set a fixed height for each graph */
-}
     </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,6 +34,8 @@
         // Embed the graph data into a global variable
         
         var graphs = {{ graphs | tojson}}
+        var contexts = {{contexts | tojson }}
+        var activation_dicts = {{ activation_dicts | tojson}}
         graphs = graphs.map(jsonString => JSON.parse(jsonString));
     </script>
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>

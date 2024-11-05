@@ -1,9 +1,8 @@
 # Flask REST API example
 from flask import Flask, json, render_template
-
 from graphs import load_tokens, load_activations, visualize_feature
-
 import networkx as nx
+
 import json
 
 tokens = None
@@ -24,8 +23,11 @@ app = create_app()
 # Define dynamic routes that will visualize a specific feature
 @app.route('/features/<int:n>', methods=['GET'])
 def get_graph(n):
-    graphs = visualize_feature(n, activations, locations, tokens, tokenizer)
-    return render_template("index.html", graphs=graphs)
+    graphs, contexts, activation_dicts = visualize_feature(n, activations, locations, tokens, tokenizer)
+    return render_template("index.html", 
+                           graphs=graphs, 
+                           contexts=contexts, 
+                           activation_dicts=activation_dicts)
 
 @app.route('/')
 def index():    
