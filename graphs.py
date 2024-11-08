@@ -172,36 +172,32 @@ def get_statistics(n, activations, locations, tokens, tokenizer) -> dict:
     locations = locations[idx]
     activations = activations[idx]
     num_activations = len(activations)
-
     avg_act = np.mean(activations)
-    
-    DO_STATS = False
     pos_pcts = {}
-    if DO_STATS:
-        #we want all activations and positions above threshold. 
-        filtered_locations, filtered_activations = zip(*[(location, activation) 
-                        for (location, activation) in zip(locations, activations)
-                        if avg_act <= activation])
-        
-        pos_pcts = defaultdict()
-        print(f'{len(filtered_locations)=}')
-        for loc, act in zip(filtered_locations, filtered_activations):
-            WINDOW_SIZE = 3
-            batch = get_context(loc, WINDOW_SIZE, tokens, tokenizer)
-            #print(f'{batch=}')
-            if len(batch) == 2 * WINDOW_SIZE:
-                char_idx = position_to_char_indice(batch, WINDOW_SIZE) #token index to char index
-                doc = nlp("".join(batch))
-                active_token = next((token for token in doc 
-                                    if token.idx <= char_idx < token.idx + len(token)), None)
-                if active_token:
-                    pos = active_token.pos
-                    #print(f'{active_token.pos=} {active_token.pos_=}')
-                    omit_pos = [97, 99, 101, 102, 103]
-                    if pos not in omit_pos:
-                        pos_pcts[pos] = pos_pcts.get(pos, 0) + act
-        act_sum = sum(pos_pcts.values())
-        pos_pcts = {k: float(v / act_sum) for k, v in pos_pcts.items()}
+    #we want all activations and positions above threshold. 
+    filtered_locations, filtered_activations = zip(*[(location, activation) 
+                    for (location, activation) in zip(locations, activations)
+                    if avg_act <= activation])
+    
+    pos_pcts = defaultdict()
+    #For each location, add the activation to the corresponding part of speech category
+    for loc, act in zip(filtered_locations, filtered_activations):
+        WINDOW_SIZE = 3
+        batch = get_context(loc, WINDOW_SIZE, tokens, tokenizer)
+        #print(f'{batch=}')
+        if len(batch) == 2 * WINDOW_SIZE:
+            char_idx = position_to_char_indice(batch, WINDOW_SIZE) #token index to char index
+            doc = nlp("".join(batch))
+            active_token = next((token for token in doc 
+                                if token.idx <= char_idx < token.idx + len(token)), None)
+            if active_token:
+                pos = active_token.pos_
+                omit_pos = ['PUNCT', 'SYM', 'X', 'EOL', 'SPACE']
+                if pos not in omit_pos:
+                    pos_pcts[pos] = pos_pcts.get(pos, 0) + act
+    act_sum = sum(pos_pcts.values())
+    #Create a dictionary with the percentage of activations for each part of speech
+    pos_pcts = {k: float(v / act_sum) for k, v in pos_pcts.items()}
     statistics = {
         'num_activations': num_activations
         , 'pos_pcts': pos_pcts
