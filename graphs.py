@@ -14,6 +14,9 @@ from spacy.tokens import Token
 from itertools import accumulate
 from collections import defaultdict
 
+import random
+
+
 
 TOTAL_BATCHES = 39039
 nlp = spacy.load("en_core_web_sm")
@@ -81,10 +84,12 @@ assert(char_pos == [0,5])
 
 #Context is the sentence broken into tokens without punctuation marks and with spaces preserved. Doc is the sentence spacy Doc.
 def make_parse_tree(context: list[str], doc : spacy.tokens.Doc, positions: list[int], activations: list[float]) -> spacy.tokens.Token:
+
     #print(f'[MAKE_PARSE] positions are {positions}')
     a = [context[position] for position in positions]
     #print(f'[MAKE_PARSE] {context=} a are {a} ')
     character_positions = positions_to_char_indices(context, positions)
+
     #Set character indices at various activations to value.
     for pos, act in zip(character_positions, activations):
         activation_node = None
@@ -167,7 +172,8 @@ assert(get_token_idx(context, 8) == 2)
 def get_statistics(n, activations, locations, tokens, tokenizer) -> dict:
     idx = locations[:,2]== n
     locations = locations[idx]
-    activations = activations[idx]
+    a = activations[idx]
+    activations = np.array(random.sample(a.tolist(), 100))
     num_activations = len(activations)
     avg_act = np.mean(activations)
     pos_pcts = {}
