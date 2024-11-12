@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <svg width="1200" height="800"></svg>
+  <script>
+    // Input arrays
+    const arrays = [
+      [[" MS", 35.96875], ["-", 11.6875], ["Windows", 45.1875], [" XP", 14.8046875], [".", 0]],
+      [[" in", 0], [" a", 0], ["Windows", 44.4375], [" world", 0], [",", 0]]
+    ];
+
+    // Define Token class
+    class Token {
+      constructor(text, activation, x, y) {
+        this.text = text.trim(); // Remove leading/trailing spaces
+        this.activation = activation;
+        this.x = x;
+        this.y = y;
+      }
+    }
+
+    const mergedData = [];
+    const numArrays = arrays.length;
+    const svg = d3.select("svg");
+    const width = +svg.attr("width");
+    const height = +svg.attr("height");
+    const nodeRadius = 40;
+    const xSpacing = width / (arrays[0].length + 2);
+    const ySpacing = 100;
+    let tokenSet = new Map()
+    // Step 1: Merge tokens by index and calculate average activations
+    arrays.forEach((array, arrayIndex) => {
+    //we'd like to calculate the positions based on mergedData,
+    // which should render one per tokenSet
+    array.forEach((elt, elementIndex) => {
+    const [token, activation] = elt;
+    // Add activations to the tokenSet for averaging
+    if (tokenSet.has(token)) {
+        tokenSet.get(token).push(activation);
+    } else {
+        tokenSet.set(token, [activation]);
+    }
+    });
+    });
+    console.log(tokenSet)
+    arrays.forEach((array, arrayIndex) => {
+        tokenSet.forEach((activations, token) => {
+        // Calculate the average activation for the token
+        const avgActivation = d3.mean(activations);
+        // Get the original x and y position for the token from mergedData
+        const originalToken = mergedData.find(d => d.text === token);
+        const originalX = originalToken ? originalToken.x : 0;
+        const originalY = originalToken ? originalToken.y : height / 2; // Default to height / 2 if not found
+        
+        // New x and y positions, incorporating spacing
+        const x = originalX + (arrayIndex + 1) * xSpacing; // Adjust x based on spacing and array index
+        const y = originalY + ySpacing * (arrayIndex - (numArrays / 2) + 0.5); // Adjust y based on array index and spacing
+        token = new Token(token, avgActivation, x, y)
+        console.log(token)
+        // Create and push the new Token to mergedData
+        mergedData.push(token);
+        });
+    });
+
+
+    // Step 2: Set up color scale for activations
+    const colorScale = d3.scaleSequential(d3.interpolateBlues)
+                         .domain([0, d3.max(mergedData, d => d.activation)]);
+
+    // Draw connections based on positions
+    arrays.forEach((arrayData, arrayIndex) => {
+  for (let i = 1; i < arrayData.length; i++) {
+    const [token1] = arrayData[i - 1];
+    const [token2] = arrayData[i];
+    
+    // Find the Token objects for the current array and consecutive indices in mergedData
+    const startToken = mergedData.find(d => d.text === token1.trim());
+    const endToken = mergedData.find(d => d.text === token2.trim());
+
+    console.log(startToken, endToken);
+    if (startToken && endToken) {
+      svg.append("line")
+         .attr("x1", startToken.x)
+         .attr("y1", startToken.y)
+         .attr("x2", endToken.x)
+         .attr("y2", endToken.y)
+         .attr("stroke", "black")
+         .attr("stroke-width", 1.5);
+        }
+    }
+    });
+    // Step 3: Draw nodes
+    svg.selectAll("g.node")
+       .data(mergedData)
+       .enter()
+       .append("g")
+       .attr("class", "node")
+       .attr("transform", d => `translate(${d.x}, ${d.y})`)
+       .append("circle")
+       .attr("r", nodeRadius)
+       .attr("fill", d => colorScale(d.activation));
+
+    // Add labels to nodes
+    svg.selectAll("g.node")
+       .append("text")
+       .attr("text-anchor", "middle")
+       .attr("dy", ".35em")
+       .text(d => d.text);
+
+  </script>
+</body>
+</html>

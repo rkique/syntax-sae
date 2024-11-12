@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import json
 from spacy.tokens import Token
 from itertools import accumulate
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 
 TOTAL_BATCHES = 39039
@@ -82,14 +82,13 @@ assert(char_pos == [0,5])
 #Context is the sentence broken into tokens without punctuation marks and with spaces preserved. Doc is the sentence spacy Doc.
 def make_parse_tree(context: list[str], doc : spacy.tokens.Doc, positions: list[int], activations: list[float]) -> spacy.tokens.Token:
     #print(f'[MAKE_PARSE] positions are {positions}')
-    a = [context[position] for position in positions]
     #print(f'[MAKE_PARSE] {context=} a are {a} ')
     character_positions = positions_to_char_indices(context, positions)
     #Set character indices at various activations to value.
     for pos, act in zip(character_positions, activations):
         activation_node = None
         for token in doc:
-            print(f'{token.idx} {pos} {token.idx+len(token)} {token.text=} ')
+            #print(f'{token.idx} {pos} {token.idx+len(token)} {token.text=} ')
             if (int(token.idx) <= pos <= int(token.idx + len(token))):
                 activation_node = token
         activation_node._.custom_tag = act
@@ -99,12 +98,14 @@ def make_parse_tree(context: list[str], doc : spacy.tokens.Doc, positions: list[
 
 ## Define joint parse tree from individual parse trees.
 def joint_parse_tree(contexts: list[list[str]], 
-                     doc: list[spacy.tokens.Doc], 
+                     docs: list[spacy.tokens.Doc], 
                      positions: list[list[int]],
                      activations: list[list[float]]):
-    #
-    for context, doc, pos, act in zip(contexts, doc, positions, activations):
+    # define a joint parse tree from here...
+    # how to isolate parse trees.
+    for context, doc, pos, act in zip(contexts, docs, positions, activations):
         parse_tree = make_parse_tree(context, doc, pos, act)
+
     #TODO
     return None
 
@@ -155,8 +156,8 @@ def get_token_idx(string_list: list[str], char_index: int):
     for i, s in enumerate(string_list):
         current_length += len(s)
         if current_length >= char_index:
-            return i  
-    raise Exception(f"Char index {char_index} not found in List: length {current_length}")
+            return i     
+    return None
 
 context = ["I", "like", "rock", "climbing"]
 assert(get_token_idx(context, 4) == 1)
@@ -201,7 +202,81 @@ def get_statistics(n, activations, locations, tokens, tokenizer) -> dict:
     }
     return statistics
 
+CONTEXTS = 100
 
+#draws a flatter tree from the top activating contexts.
+def get_context_activations(n, activations, locations, tokens, tokenizer, ws=30) -> tuple[list[str], list[dict]]:
+    print(f"Visualizing Feature {n}")
+    idx = locations[:,2]== n
+    locations = locations[idx]
+    activations = activations[idx]
+    top_dicts = batch_dicts(n, activations, locations, CONTEXTS)
+    #top_dicts contain pos, act lists.
+    context_activations = []
+    for d in top_dicts:
+        positions = d['positions']
+        activations = d['activations']
+        #access batch text and pipeline through spacy
+        batch = get_batch_text(int(d['i']), tokens, tokenizer)
+        doc = nlp("".join(batch))
+        #get token position around highest activation
+        max_position_index = activations.index(max(activations))
+        max_token_idx = positions[max_position_index]
+        max_char_idx = position_to_char_indice(batch, max_token_idx)
+        #this sentence bound is arbitrary.
+        start_char = max_char_idx - ws #char
+        end_char = max_char_idx + ws
+        start_idx = get_token_idx(batch, start_char) if start_char >= 0 else 0
+        end_idx = get_token_idx(batch, end_char) if end_char < len(batch) else len(batch)
+        token_context = batch[start_idx:end_idx]
+        def offset(position):
+            return position - start_idx
+        #print(f'{token_context=} {max_char_idx=} {start_char=} {end_char=}')  
+        filtered_positions, filtered_activations = zip(*[(offset(position), activation) 
+                    for (position, activation) in zip(positions, activations)
+                    if 0 <= (offset(position)) <= ws * 2]) #filters batch activations to window
+        
+       #list[(token, activation)]
+        context_activation = []
+        for i in range(0, len(token_context)):
+            #if there is a corresponding activation, index it.
+            if i in filtered_positions:
+                activation = float(filtered_activations[filtered_positions.index(i)])
+            else:
+                activation = 0
+            context_activation.append((token_context[i], activation))
+        context_activations.append(context_activation)
+    #list[list[(token, activation)]]
+    return context_activations
+
+def visualize_feature_flat(n, activations, locations, tokens, tokenizer, ws=30):
+    context_acts = get_context_activations(n, activations, locations, tokens, tokenizer, ws=ws)
+    contexts_around_max = []
+    view_ws = 2
+    for context in context_acts:
+        #get index of max of token activation on context
+        highest_index, _ = max(enumerate(context), key=lambda x: x[1][1])
+        context_around_max = []
+        for offset in range(-view_ws, view_ws + 1): 
+            position = highest_index + offset
+            if 0 <= position < len(context): 
+                token, activation = context[position]
+                token = token.strip()
+                activation = float(activation)
+                context_around_max.append((token, activation))
+        contexts_around_max.append(context_around_max)
+    #get the most common activations from the counters.
+    #log the activations.
+    # for c in c_array:
+    #     most_common_tokens = [(token, np.log(total_act)) for token, total_act in c.most_common(3)]
+    #     top_tokens_around_max.append(most_common_tokens)
+
+    return contexts_around_max
+    return context_acts
+
+
+
+#Given activations over contexts, returns activations
 def visualize_feature(n, activations, 
                       locations, tokens, tokenizer, k=5) -> tuple[list[str], list[str], list[dict]]:
     print(f"Visualizing Feature {n}")
@@ -238,7 +313,7 @@ def visualize_feature(n, activations,
         
         filtered_positions, filtered_activations = zip(*[(offset(position), activation) 
                     for (position, activation) in zip(positions, activations)
-                    if 0 <= (offset(position)) < len(context_list)]) #this makes some negative.
+                    if 0 <= (offset(position)) < len(context_list)]) 
         
         activation_dict = {filtered_positions[i]: float(filtered_activations[i])
                            for i in range(len(filtered_positions))}
