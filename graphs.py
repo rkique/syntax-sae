@@ -13,7 +13,9 @@ import json
 from spacy.tokens import Token
 from itertools import accumulate
 from collections import defaultdict
+
 import random
+
 
 
 TOTAL_BATCHES = 39039
@@ -82,11 +84,10 @@ assert(char_pos == [0,5])
 
 #Context is the sentence broken into tokens without punctuation marks and with spaces preserved. Doc is the sentence spacy Doc.
 def make_parse_tree(context: list[str], doc : spacy.tokens.Doc, positions: list[int], activations: list[float]) -> spacy.tokens.Token:
-    #this is necessary
-    #positions = [position - 1  if position > 0 else position for position in positions]
-    print(f'[MAKE_PARSE] positions are {positions}')
+
+    #print(f'[MAKE_PARSE] positions are {positions}')
     a = [context[position] for position in positions]
-    print(f'[MAKE_PARSE] {context=} a are {a} ')
+    #print(f'[MAKE_PARSE] {context=} a are {a} ')
     character_positions = positions_to_char_indices(context, positions)
 
     #Set character indices at various activations to value.
