@@ -8,8 +8,7 @@ import networkx as nx
 import json
 
 from huggingface_hub import login
-print("logging in")
-login(token="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")
+
 
 tokens = None
 tokenizer = None
