@@ -3,3 +3,4 @@ sae-auto-interp/*
 .venv
 __pycache__
 env
+feature_graphs.db

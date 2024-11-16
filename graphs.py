@@ -84,17 +84,23 @@ assert(char_pos == [0,5])
 
 #Context is the sentence broken into tokens without punctuation marks and with spaces preserved. Doc is the sentence spacy Doc.
 def make_parse_tree(context: list[str], doc : spacy.tokens.Doc, positions: list[int], activations: list[float]) -> spacy.tokens.Token:
-
     #print(f'[MAKE_PARSE] positions are {positions}')
-    #print(f'[MAKE_PARSE] {context=} a are {a} ')
+    #print(f'[MAKE_PARSE] {context=}')
+    if context[0] == '<bos>':
+        context[0] = ' <bos>'
     character_positions = positions_to_char_indices(context, positions)
-
+    #print(f'[MAKE_PARSE] {character_positions=}')
     #Set character indices at various activations to value.
     for pos, act in zip(character_positions, activations):
         activation_node = None
-        for token in doc:
+        for i, token in enumerate(doc):
             #print(f'{token.idx} {pos} {token.idx+len(token)} {token.text=} ')
-            if (int(token.idx) <= pos <= int(token.idx + len(token))):
+            if i == len(doc) - 1:
+                if (int(token.idx) <= pos <= int(token.idx + len(token)+ 1)):
+                    activation_node = token
+            # else:
+            # print(f'{token.idx} {pos} {token.idx+len(token)} {token.text=}')
+            if (token.idx <= pos <= token.idx + len(token)):
                 activation_node = token
         activation_node._.custom_tag = act
     # Find the root node (the one with dep_ == "ROOT")
@@ -108,11 +114,26 @@ def joint_parse_tree(contexts: list[list[str]],
                      activations: list[list[float]]):
     # define a joint parse tree from here...
     # how to isolate parse trees.
+    parse_trees = []
     for context, doc, pos, act in zip(contexts, docs, positions, activations):
         parse_tree = make_parse_tree(context, doc, pos, act)
+        parse_trees.append(parse_tree)
+    combined_children = []
 
-    #TODO
-    return None
+    # Loop through all parse trees and append their root node text and children
+    for tree in parse_trees:
+        combined_children.extend(tree['children'])  # Add all children of the root
+
+    # Now, create a new root node with combined text and children
+    combined_root_node = {
+        "text": "ROOT",
+        "lemma": "be",  # You can adjust this as needed
+        "pos": "AUX",  # Adjust POS as needed
+        "dep": "ROOT",  # The combined node will still be the ROOT
+        "tag": 0.0,  # Adjust the tag if necessary
+        "children": combined_children  # Append all the children
+    }
+    return combined_root_node
 
 
 def node_to_dict(token):
@@ -150,10 +171,10 @@ def batch_dicts(n, activations, locations, k=12):
 
 def get_sentence_at_index(doc, char_index):
     for sent in doc.sents:
-        if sent.start_char <= char_index < sent.end_char:
+        if sent.start_char <= char_index <= sent.end_char:
             sent_tokens = [token.text for token in sent]
             return sent_tokens, sent, sent.start_char, sent.end_char
-    raise Exception("No sentence at index")
+    raise Exception(f"No sentence at index with {char_index=} sents: {list(doc.sents)}")
 
 def get_token_idx(string_list: list[str], char_index: int):
     # Concatenate the list of strings into a single string
@@ -216,12 +237,15 @@ def get_context_activations(n, activations, locations, tokens, tokenizer, ws=30)
     idx = locations[:,2]== n
     locations = locations[idx]
     activations = activations[idx]
+
     top_dicts = batch_dicts(n, activations, locations, CONTEXTS)
     #top_dicts contain pos, act lists.
     context_activations = []
     for d in top_dicts:
         positions = d['positions']
         activations = d['activations']
+        if len(activations) == 0:
+            continue
         #access batch text and pipeline through spacy
         batch = get_batch_text(int(d['i']), tokens, tokenizer)
         doc = nlp("".join(batch))
@@ -280,17 +304,34 @@ def visualize_feature_flat(n, activations, locations, tokens, tokenizer, ws=30):
     return contexts_around_max
     return context_acts
 
+def get_joint_parse_tree(parse_trees):
+    combined_children = []
+    for tree in parse_trees:
+        print(tree)
+        combined_children.extend(tree['children'])  # Add all children of the root
 
+    # Now, create a new root node with combined text and children
+    combined_root_node = {
+        "text": "ROOT",
+        "lemma": "be",  # You can adjust this as needed
+        "pos": "AUX",  # Adjust POS as needed
+        "dep": "ROOT",  # The combined node will still be the ROOT
+        "tag": 0.0,  # Adjust the tag if necessary
+        "children": combined_children  # Append all the children
+    }
+    return combined_root_node
 
 #Given activations over contexts, returns activations
 def visualize_feature(n, activations, 
                       locations, tokens, tokenizer, k=5) -> tuple[list[str], list[str], list[dict]]:
-    print(f"Visualizing Feature {n}")
     idx = locations[:,2]== n
     locations = locations[idx]
     activations = activations[idx]
-    top_dicts = batch_dicts(n, activations, locations, 12)
+
+    if len(activations) == 0:
+        return [], [], []
     
+    top_dicts = batch_dicts(n, activations, locations, 50)
     #top_dicts contain pos, act lists.
     parse_trees = []
     contexts = []
@@ -309,27 +350,33 @@ def visualize_feature(n, activations,
 
         max_char_idx = position_to_char_indice(batch, max_token_idx)
         context_list, sent, start_char, end_char = get_sentence_at_index(doc, max_char_idx)
+  
+        # print(f'{start_char=} {end_char=}')
         sent = sent.as_doc()
-        #print(f'{context_list=}')
+ 
         start_idx = get_token_idx(batch, start_char)
         end_idx = get_token_idx(batch, end_char)
-        #print(f'{batch=} {start_idx=} {end_idx=}')
+        idx_range = end_idx - start_idx
+        
+        if start_idx == end_idx:
+            continue
+
         def offset(position):
             return position - start_idx
         
         filtered_positions, filtered_activations = zip(*[(offset(position), activation) 
                     for (position, activation) in zip(positions, activations)
-                    if 0 <= (offset(position)) < len(context_list)]) 
+                    if 0 <= (offset(position)) <= idx_range]) 
         
         activation_dict = {filtered_positions[i]: float(filtered_activations[i])
                            for i in range(len(filtered_positions))}
         
+        #print(activation_dict)
         #print(f'f{context_list=} {filtered_positions=}')
         #print(f'[START END] {start_idx=} {end_idx=}')
         token_context = batch[start_idx:end_idx]
         parse_tree = make_parse_tree(token_context, sent,
                                      filtered_positions, filtered_activations)
-        
         parse_trees.append(jsonify(parse_tree))
         contexts.append(batch[start_idx:end_idx])
         activation_dicts.append(activation_dict)

@@ -1,128 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <style>
-               * {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        .content {
-            display: flex;
-            justify-content: center; /* Center the container horizontally */
-            padding: 20px; /* Add some padding around the body */
-            overflow-x: hidden; /* Prevent horizontal overflow */
-        }
-
-        #graphContainer {
-            display: grid;                  /* Use grid layout */
-            grid-template-columns: repeat(4, 1fr); /* Create 5 equal columns */
-            gap: 2px;                     /* Space between graphs */
-            max-width: 100vw;            /* Set a maximum width for the container */
-            width: 100%;                   /* Full width of the viewport */
-            height: auto;                  /* Allow height to adjust based on content */
-            overflow: hidden;              /* Prevent overflow */
-        }
-
-        .graphContextContainer {
-            display: flex;                 /* Use flexbox for horizontal alignment */
-            flex-direction: column;        /* Stack graph and context vertically */
-            align-items: stretch;          /* Align items to stretch */
-            margin: 0 0;
-            /*margin-bottom: 10px;          /* Space between graph-context pairs */
-        }
-
-        .graphDiv {
-            flex: 2;                       /* Allow graphs to grow to fill available space */
-            width: 100%;                   /* Ensure graph divs take full width */
-        }
-
-        .category-row {
-            display: flex;
-            justify-content: space-around;
-            padding: 10px;
-        }
-
-        .contextDiv {
-            font-size: 10px;
-            flex: 1;                       /* Allow the context to take up the remaining space */
-            margin-left: 3px;            /* Space between the graph and context */
-            height: calc(3 * 1em);   /* Set height for three lines, assuming a line height of 1.2em */
-            overflow: scroll;
-            display: -webkit-box;       /* For ellipsis effect */
-            -webkit-line-clamp: 3;      /* Limit to 3 lines */
-            -webkit-box-orient: vertical; /* Ensure vertical layout */
-            /*text-overflow: ellipsis;     /* Add ellipsis for overflowing text */
-            line-height: 1.6em;         /* Set line height for better spacing */
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            #graphContainer {
-                grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
-            }
-        }
-
-        @media (max-width: 480px) {
-            #graphContainer {
-                grid-template-columns: 1fr; /* 1 column on very small screens */
-            }
-        }
-    </style>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Graph Visualization</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>
-        // Embed the graph data into a global variable
-        
-        var graphs = {{ graphs | tojson}}
-        var contexts = {{contexts | tojson }}
-        var activation_dicts = {{ activation_dicts | tojson}}
-        var statistics = {{ statistics | tojson }}
-        graphs = graphs.map(jsonString => JSON.parse(jsonString));
-    </script>
-    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syntactic Trees for SAE Features</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <label>
-        <input type="checkbox" id="toggleIdFormat">
-        POS
-    </label>
-    <label>
-        <input type="checkbox" id="toggleZeroFormat" checked>
-        Prune Unactive
-    </label>
-    <label>
-        <input type="checkbox" id="toggleOmitPOS" checked>
-        Omit Misc. POS
-    </label>
-    <div class="category-row">
-    <div id="pos84"> ADJ </div>
-    <div id="pos85"> ADP </div>
-    <div id="pos86"> ADV </div>
-    <div id="pos87"> AUX </div>
-    <div id="pos88"> CONJ </div>
-    <div id="pos89"> CCONJ </div>
-    <div id="pos90"> DET </div>
-    <div id="pos91"> INTJ </div>
-    <div id="pos92"> NOUN </div>
-    <div id="pos93"> NUM </div>
-    <div id="pos94"> PART </div>
-    <div id="pos95"> PRON </div>
-    <div id="pos96"> PROPN </div>
-    <div id="pos97"> PUNCT </div>
-    <div id="pos98"> SCONJ </div>
-    <div id="pos99"> SYM </div>
-    <div id="pos100"> VERB </div>
-    <div id="pos101"> X </div>
-    <div id="pos102"> EOL </div>
-    <div id="pos103"> SPACE </div>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+  <div class="container mx-auto p-6">
+    <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Syntactic Trees for SAE Features</h2>
+    <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
+      <!-- Loop through feature buttons -->
+      <!-- The script below dynamically generates buttons for features/1 to features/3275 -->
+      <script>
+        const container = document.currentScript.parentElement;
+        for (let i = 1; i <= 3275; i++) {
+          const button = document.createElement("a");
+          button.href = `/features/${i}`;
+          button.textContent = `Feature ${i}`;
+          button.className = "bg-white hover:bg-blue-100 text-black py-2 px-4 rounded-lg text-center shadow-md transition duration-200";
+          container.appendChild(button);
+        }
+      </script>
     </div>
-
-    <div id="content">
-    <div id="graphContainer" width="100%; height: 100%"></div>
-    </div>
+  </div>
 </body>
 </html>

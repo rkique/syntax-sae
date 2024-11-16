@@ -60,16 +60,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const maxTagValue = Math.max(...nodes.map(node => node.tag));
 
-            const getColorGradient = (tag) => {
+            const getColorGradient = (node) => {
+                const keywords = ['recalls', 'recall', 'Recall', 'recalls', 'Recalled', 'Recalls', 'recalling', 'recalled']
+                if (keywords.includes(node.text)){
+                    return `rgb(255, 255, 0)`;
+                }
                 const startColor = { r: 255, g: 255, b: 255 }; // Orange for tag 1
                 const endColor = { r: 0, g: 0, b: 255 }; // Blue for tag 0
-                const ratio = maxTagValue > 0 ? tag / maxTagValue : 0; // Avoid division by zero
+                const ratio = maxTagValue > 0 ? node.tag / maxTagValue : 0; // Avoid division by zero
                 
                 const clampedRatio = Math.max(0, Math.min(1, ratio));
                 const r = Math.round(startColor.r + clampedRatio * (endColor.r - startColor.r));
                 const g = Math.round(startColor.g + clampedRatio * (endColor.g - startColor.g));
                 const b = Math.round(startColor.b + clampedRatio * (endColor.b - startColor.b));
-            
+                
                 return `rgb(${r}, ${g}, ${b})`;
             };
             // Create a container for each graph and its corresponding context
@@ -81,23 +85,23 @@ document.addEventListener("DOMContentLoaded", () => {
             graphDiv.classList.add("graphDiv"); 
             graphContextContainer.appendChild(graphDiv);
 
-            const contextDiv = document.createElement("div");
-            contextDiv.id = `contextDiv-${index}`;
-            contextDiv.classList.add("contextDiv"); 
-            activationDict = activation_dicts[index]
-            console.log(activationDict)
-            const maxActivation = Math.max(...Object.values(activationDict));
+            // const contextDiv = document.createElement("div");
+            // contextDiv.id = `contextDiv-${index}`;
+            // contextDiv.classList.add("contextDiv"); 
+            // activationDict = activation_dicts[index]
+            // console.log(activationDict)
+            // const maxActivation = 100;
             
             // Create the context with color highlighting
-            contextDiv.innerHTML = contexts[index].map((word, index) => {
-                const activation = activationDict[index] || 0;
-                const blueIntensity = Math.round((activation / maxActivation) * 255);
-                const color = `rgb(${255 - blueIntensity}, ${255 - blueIntensity}, 255)`;
-                const textColor = blueIntensity > 127 ? "white" : "black";
-                return `<span style="background-color: ${color}; color: ${textColor}; padding: 2px;">${word}</span>`;
-            }).join(" ");
+            // contextDiv.innerHTML = contexts[index].map((word, index) => {
+            //     const activation = activationDict[index] || 0;
+            //     const blueIntensity = Math.round((activation / maxActivation) * 255);
+            //     const color = `rgb(${255 - blueIntensity}, ${255 - blueIntensity}, 255)`;
+            //     const textColor = blueIntensity > 127 ? "white" : "black";
+            //     return `<span style="background-color: ${color}; color: ${textColor}; padding: 2px;">${word}</span>`;
+            // }).join(" ");
 
-            graphContextContainer.appendChild(contextDiv);
+            // graphContextContainer.appendChild(contextDiv);
             graphContainer.appendChild(graphContextContainer);
 
             const filteredNodes = nodes.filter(node => !node.zero);
@@ -105,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const x = filteredNodes.map(node => node.x);
             const y = filteredNodes.map(node => node.y);
             const nodeIds = filteredNodes.map(node => node.text);
-            const nodeColors = filteredNodes.map(node => getColorGradient(node.tag));
+            const nodeColors = filteredNodes.map(node => getColorGradient(node));
             
             // Define nodes for Plotly
             const nodeTrace = {
@@ -171,8 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     b: 10,   // Bottom margin
                     t: 10    // Top margin
                 },
-                width: 280, // Make the plot use full width of the container
-                height: 180 // Make the plot use full height of the container
+                width: 1200, // Make the plot use full width of the container
+                height: 800 // Make the plot use full height of the container
             };
 
             // Plot the graph
@@ -181,26 +185,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     displayNodes()
 
-    function applyHighlighting(stats, omitPosIds) {
-        // Calculate sum of percentages excluding the omitted category
-        const sumOfRemaining = Object.entries(stats.pos_pcts)
-        .filter(([posId]) => !omitPosIds.includes(parseInt(posId))) 
-        .reduce((sum, [, pct]) => sum + pct, 0);
+    // function applyHighlighting(stats, omitPosIds) {
+    //     // Calculate sum of percentages excluding the omitted category
+    //     const sumOfRemaining = Object.entries(stats.pos_pcts)
+    //     .filter(([posId]) => !omitPosIds.includes(parseInt(posId))) 
+    //     .reduce((sum, [, pct]) => sum + pct, 0);
     
-        for (const [posId, pct] of Object.entries(stats.pos_pcts)) {
-          if (omitPosIds.includes(parseInt(posId))) continue;
-          const div = document.getElementById(`pos${posId}`);
-          if (div) {
-            const normalizedPct = pct / sumOfRemaining;
-            const colorValue = Math.floor(255 * (1 - normalizedPct)); // 0% = light, 100% = dark
-            div.style.backgroundColor = `rgb(${colorValue}, ${colorValue}, 255)`;
-          }
-        }
-      }
+    //     for (const [posId, pct] of Object.entries(stats.pos_pcts)) {
+    //       if (omitPosIds.includes(parseInt(posId))) continue;
+    //       const div = document.getElementById(`pos${posId}`);
+    //       if (div) {
+    //         const normalizedPct = pct / sumOfRemaining;
+    //         const colorValue = Math.floor(255 * (1 - normalizedPct)); // 0% = light, 100% = dark
+    //         div.style.backgroundColor = `rgb(${colorValue}, ${colorValue}, 255)`;
+    //       }
+    //     }
+    //   }
     
     // Apply the highlighting function
     var omitPOS = [97, 99, 101, 102, 103]
-    applyHighlighting(statistics, omitPOS);
+    // applyHighlighting(statistics, omitPOS);
     
     OmitCheckbox.addEventListener('change', () => {
         omitPOS = OmitCheckbox.checked ? [97, 99, 101, 102, 103] : []
