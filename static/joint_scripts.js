@@ -1,9 +1,63 @@
+
+let activeLevel = 3;
+const initialLayout = (activeLevel) => {
+    return {
+    font: {
+        size: 8 // Font size for the title
+    },
+    xaxis: {
+        showgrid: false,
+        zeroline: false,
+        showticklabels: false,
+        title: '', // You can add titles if needed
+        automargin: true, // Automatically adjust margins
+        range: [-10000, 10000]
+    },
+    yaxis: {
+        showgrid: false,
+        zeroline: false,
+        showticklabels: false,
+        title: '', // You can add titles if needed
+        fixedrange: true,
+        automargin: true // Automatically adjust margins
+    },
+    showlegend: false,
+    margin: {
+        l: 10,   // Left margin
+        r: 10,   // Right margin
+        b: 10,   // Bottom margin
+        t: 70    // Top margin
+    },
+    width: 1200, // Make the plot use full width of the container
+    height: 800, // Make the plot use full height of the container
+    dragmode: 'pan',
+    sliders: [
+            {
+            yanchor: 'top',    // Anchor the slider to the top
+            y: 1.15,           // Position the slider above the graph (relative to layout height)
+            pad: { t: 0 },     // Adjust padding for positioning
+            active: activeLevel,
+            currentvalue: {
+                visible: true,
+                prefix: 'Zoom: ',
+                xanchor: 'center',
+                font: {
+                    size: 12
+                }
+            },
+            steps: []
+        }
+    ]
+    };
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
     const graphContainer = document.getElementById("graphContainer"); // Parent container for all graphs
     const IdCheckbox = document.getElementById("toggleIdFormat");
-    const OmitCheckbox = document.getElementById("toggleOmitPOS");
+    //const OmitCheckbox = document.getElementById("toggleOmitPOS");
     const ZeroCheckbox = document.getElementById("toggleZeroFormat");
-
+    
     var idCounter = 0;
     const assignUniqueIds = (node) => {
         idCounter++;
@@ -43,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
             childX += childXOffset;
         });
     }
-    const displayNodes = () => {
+    const displayNodes = (activeLevel) => {
         const existingContainers = document.querySelectorAll(".graphContextContainer");
         existingContainers.forEach(container => container.remove());
     
@@ -148,74 +202,48 @@ document.addEventListener("DOMContentLoaded", () => {
                     edgeTrace.y.push(sourceNode.y, targetNode.y, null);
                 }
             });
-
-            // Plotly layout configuration
-            const layout = {
-                font: {
-                    size: 8 // Font size for the title
-                },
-                xaxis: {
-                    showgrid: false,
-                    zeroline: false,
-                    showticklabels: false,
-                    title: '', // You can add titles if needed
-                    automargin: true // Automatically adjust margins
-                },
-                yaxis: {
-                    showgrid: false,
-                    zeroline: false,
-                    showticklabels: false,
-                    title: '', // You can add titles if needed
-                    automargin: true // Automatically adjust margins
-                },
-                showlegend: false,
-                margin: {
-                    l: 10,   // Left margin
-                    r: 10,   // Right margin
-                    b: 10,   // Bottom margin
-                    t: 10    // Top margin
-                },
-                width: 1200, // Make the plot use full width of the container
-                height: 800 // Make the plot use full height of the container
+            const config = {
+                displayModeBar: false // Disables the modebar
             };
+            
+            // Plotly layout configuration
+            const layout = initialLayout(activeLevel)
+            // Define zoom levels and slider steps
+            const zoomLevels = [0.125, 0.25, 0.5, 1, 2, 5, 10]; // Different zoom levels (scale factors)
+            zoomLevels.forEach((scale) => {
+                layout.sliders[0].steps.push({
+                    method: 'relayout',
+                    args: ['xaxis.range', [- 10000 / scale, 10000 / scale]], // Adjust range based on scale
+                    label: `x${scale}`
+                });
+            });
+            // Plot the graph with the slider
+            Plotly.newPlot(graphDiv, [edgeTrace, nodeTrace], layout, config);
+                    });
+                }
+    displayNodes(3)
 
-            // Plot the graph
-            Plotly.newPlot(graphDiv, [edgeTrace, nodeTrace], layout);
-        });
-    }
-    displayNodes()
-
-    // function applyHighlighting(stats, omitPosIds) {
-    //     // Calculate sum of percentages excluding the omitted category
-    //     const sumOfRemaining = Object.entries(stats.pos_pcts)
-    //     .filter(([posId]) => !omitPosIds.includes(parseInt(posId))) 
-    //     .reduce((sum, [, pct]) => sum + pct, 0);
-    
-    //     for (const [posId, pct] of Object.entries(stats.pos_pcts)) {
-    //       if (omitPosIds.includes(parseInt(posId))) continue;
-    //       const div = document.getElementById(`pos${posId}`);
-    //       if (div) {
-    //         const normalizedPct = pct / sumOfRemaining;
-    //         const colorValue = Math.floor(255 * (1 - normalizedPct)); // 0% = light, 100% = dark
-    //         div.style.backgroundColor = `rgb(${colorValue}, ${colorValue}, 255)`;
-    //       }
-    //     }
-    //   }
-    
-    // Apply the highlighting function
     var omitPOS = [97, 99, 101, 102, 103]
-    // applyHighlighting(statistics, omitPOS);
-    
-    OmitCheckbox.addEventListener('change', () => {
-        omitPOS = OmitCheckbox.checked ? [97, 99, 101, 102, 103] : []
-        applyHighlighting(statistics, omitPOS)
+
+    // OmitCheckbox.addEventListener('change', () => {
+    //     omitPOS = OmitCheckbox.checked ? [97, 99, 101, 102, 103] : []
+    //     applyHighlighting(statistics, omitPOS)
+    // });
+    graphDiv = document.getElementById(`graphDiv-0`)
+    graphDiv.on('plotly_sliderchange', (eventData) => {
+        // Access the updated layout from the event data
+        console.log(eventData.step._index)
+        activeLevel = eventData.step._index
     });
 
     IdCheckbox.addEventListener('change', () => {
-        displayNodes();
+        console.log(`${activeLevel}`)
+        displayNodes(activeLevel);
     });
 
     ZeroCheckbox.addEventListener('change', () => {
-        displayNodes();
+        console.log(`${activeLevel}`)
+        displayNodes(activeLevel);
     });
 });
+
