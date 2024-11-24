@@ -1,5 +1,5 @@
 
-let activeLevel = 3;
+let activeLevel = 1;
 const initialLayout = (activeLevel) => {
     return {
     font: {
@@ -73,30 +73,42 @@ document.addEventListener("DOMContentLoaded", () => {
             //console.log('toggle is checked')
             return `${[node.pos]}`;
         } else {
+            if (node.hasOwnProperty('occurrences') && node.occurrences > 1) {
             //console.log('toggle is not checked')
-            return `${node.text}`;
+            return `${node.text} (${node.occurrences})`;
+            }
+            else {
+                return `${node.text}`
+            }
         }
     };
     // Function to traverse the graph and extract nodes and edges
     const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0) => {
-        nodes.push({ id: node.id, zero: ZeroCheckbox.checked ? (node.tag === 0) : false, text: text_for_node(node), x: x, y: y, tag: node.tag});
+        nodes.push({ 
+            id: node.id, 
+            zero: ZeroCheckbox.checked ? (node.tag === 0) : false, 
+            text: text_for_node(node), 
+            x: x,
+            y: y, 
+            tag: node.tag
+        });
         const children = Array.isArray(node.children) ? node.children : [];
-        const childYStart = y - 50; 
-        const childXOffset = 60;
-        let childX = x - (children.length - 1) * (childXOffset / 2); 
+        const childXStart = x + 200;  // Adjusted child position for x
+        const childYOffset = 1000  // Adjusted child offset for y
+        let childY = y + (children.length - 1) * (childYOffset / 3);  // Adjusted starting position for y
         children.forEach(child => {
-            const edge = { source: node.id, target: child.id};
+            const edge = { source: node.id, target: child.id };
             if (ZeroCheckbox.checked) {
                 edge.zero = (node.tag === 0 || child.tag === 0);
             } else {
-                edge.zero = false
+                edge.zero = false;
             }
             edges.push(edge);
-            // Recursive call
-            extractNodesAndEdges(child, nodes, edges, childX, childYStart);
-            childX += childXOffset;
+            // Recursive call with switched coordinates
+            extractNodesAndEdges(child, nodes, edges, childXStart, childY);
+            childY -= childYOffset;
         });
-    }
+    };
     const displayNodes = (activeLevel) => {
         const existingContainers = document.querySelectorAll(".graphContextContainer");
         existingContainers.forEach(container => container.remove());
@@ -115,10 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const maxTagValue = Math.max(...nodes.map(node => node.tag));
 
             const getColorGradient = (node) => {
-                const keywords = ['recalls', 'recall', 'Recall', 'recalls', 'Recalled', 'Recalls', 'recalling', 'recalled']
-                if (keywords.includes(node.text)){
-                    return `rgb(255, 255, 0)`;
-                }
+                // const keywords = ['recalls', 'recall', 'Recall', 'recalls', 'Recalled', 'Recalls', 'recalling', 'recalled']
+                // if (keywords.includes(node.text)){
+                //     return `rgb(255, 255, 0)`;
+                // }
                 const startColor = { r: 255, g: 255, b: 255 }; // Orange for tag 1
                 const endColor = { r: 0, g: 0, b: 255 }; // Blue for tag 0
                 const ratio = maxTagValue > 0 ? node.tag / maxTagValue : 0; // Avoid division by zero
@@ -208,12 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Plotly layout configuration
             const layout = initialLayout(activeLevel)
-            // Define zoom levels and slider steps
-            const zoomLevels = [0.125, 0.25, 0.5, 1, 2, 5, 10]; // Different zoom levels (scale factors)
+            // Define zoom levels and slider     steps
+            const zoomLevels = [20, 40,80,160,320,640]; // Different zoom levels (scale factors)
             zoomLevels.forEach((scale) => {
                 layout.sliders[0].steps.push({
                     method: 'relayout',
-                    args: ['xaxis.range', [- 10000 / scale, 10000 / scale]], // Adjust range based on scale
+                    args: ['xaxis.range', [- 100000 / scale, 100000 / scale]], // Adjust range based on scale
                     label: `x${scale}`
                 });
             });

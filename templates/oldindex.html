@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatter Plot with Links</title>
+    <script src="https://cdn.plot.ly/plotly-2.20.0.min.js"></script>
+    <style>
+        h1 {
+            margin: 0 auto;
+        }
+        div {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gemma-9b Layer 11 Features</h1>
+    <div id="scatter-plot"></div>
+
+    <script>
+        // Scatter data passed from Flask
+        const scatterData = {{ scatter_data|tojson }};
+
+        // Extract x, y, and links for the scatter plot
+        const x = scatterData.map(point => point.x);
+        const y = scatterData.map(point => point.y);
+        const links = scatterData.map(point => point.link);
+
+        // Create a scatter plot
+        const trace = {
+            x: x,
+            y: y,
+            mode: 'markers',
+            type: 'scatter',
+            marker: { size: 10, color: 'blue' },
+            text: links,  // Tooltip shows the link
+            hovertemplate: 'Go to %{text}'
+        };
+
+        const layout = {
+            xaxis: {
+                range: [0, 15] // Set the initial range for the x-axis
+            },
+            yaxis: {
+                range: [0, 16] // Set the initial range for the y-axis
+            },
+            hovermode: 'closest',
+            width: 1200,
+            height: 800
+        };
+
+        // Create the plot
+        Plotly.newPlot('scatter-plot', [trace], layout);
+
+        // Add event listener for click event on the plot
+        document.getElementById('scatter-plot').on('plotly_click', function(eventData) {
+            const pointIndex = eventData.points[0].pointIndex; // Get index of clicked point
+            const link = links[pointIndex]; // Get the link from the clicked point
+            window.open(link, '_blank'); // Open the link in a new tab
+        });
+    </script>
+</body>
+</html>

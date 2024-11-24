@@ -175,6 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 height: 180 // Make the plot use full height of the container
             };
 
+            // Plot the graph
+            Plotly.newPlot(graphDiv, [edgeTrace, nodeTrace], layout);
+        });
+    }
     displayNodes()
 
     function applyHighlighting(stats, omitPosIds) {

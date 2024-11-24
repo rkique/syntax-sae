@@ -1,12 +1,13 @@
 # Flask REST API example
 from flask import Flask, json, render_template
 from graphs import load_tokens, load_activations, visualize_feature, visualize_feature_flat
-from graphs import get_joint_parse_tree, jsonify
+from graphs import merged_parse_trees, get_total_occurrences
+from graphs import get_joint_parse_tree, jsonify, context_to_dict
 from graphs import get_statistics
 import sqlite3
 import networkx as nx
 import json
-
+import numpy as np
 from huggingface_hub import login
 
 
@@ -44,13 +45,31 @@ def get_graph_from_db(n):
 def get_joint(n):
     graphs, contexts, activation_dicts = get_graph_from_db(n)
     graphs = [json.loads(graph) for graph in graphs]
-    graph = json.dumps(get_joint_parse_tree(graphs))
+    graphs = get_joint_parse_tree(graphs, is_merge=False)
+    graph = json.dumps(graphs)
     return render_template("joint.html", 
                         graphs=[graph], 
                         contexts=[], 
                         statistics=[],
                         activation_dicts=[])
 
+@app.route('/merged/<int:n>', methods=['GET'])
+def get_merged(n):
+    graphs, contexts, activation_dicts = get_graph_from_db(n)
+    #graphs = [json.loads(graph) for graph in graphs]
+    graphs = [context_to_dict(context, activation_dict) for context, activation_dict in zip(contexts, activation_dicts)]
+    graphs = merged_parse_trees(graphs)
+    # merged = merged_parse_trees(graphs) #merged is list of dicts
+    # depths = [get_total_occurrences(tree) for tree in merged]
+    # merged = sorted(zip(merged, depths), key=lambda x:x[1], reverse=True)
+    # merged = [x[0] for x in merged]
+    print(graphs)
+    graph = json.dumps(get_joint_parse_tree(graphs, is_merge=True))
+    return render_template("joint.html", 
+                        graphs=[graph], 
+                        contexts=[], 
+                        statistics=[],
+                        activation_dicts=[])
 
 # Define dynamic routes that will visualize a specific feature
 @app.route('/features/<int:n>', methods=['GET'])
@@ -76,7 +95,16 @@ def get_activations(n):
 
 @app.route('/')
 def index():    
-    return 'Go to /features/<n> to visualize a feature'
-
+    points = np.load('pos_map.npy')
+    # Prepare data for visualization
+    scatter_data = [
+        {
+            "x": float(points[i][1]), #transpose.
+            "y": float(points[i][0]),
+            "feature": i  # Create a link for each feature
+        }
+        for i in range(points.shape[0])
+    ]
+    return render_template("index.html", scatter_data=scatter_data)
 
 app.run(host='0.0.0.0', port=8080)
