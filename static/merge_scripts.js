@@ -1,17 +1,19 @@
 
-let activeLevel = 2;
+let activeLevel = 1;
+let HEIGHT = 800
+
 const initialLayout = (activeLevel) => {
     return {
     font: {
         size: 8 // Font size for the title
     },
     xaxis: {
-        showgrid: false,
+        showgrid: true,
         zeroline: false,
         showticklabels: false,
         title: '', // You can add titles if needed
         automargin: true, // Automatically adjust margins
-        range: [-1000, 1000]
+        range: [-1000, 3000]
     },
     yaxis: {
         showgrid: false,
@@ -29,7 +31,7 @@ const initialLayout = (activeLevel) => {
         t: 70    // Top margin
     },
     width: 1200, // Make the plot use full width of the container
-    height: 800, // Make the plot use full height of the container
+    height: HEIGHT, // Make the plot use full height of the container
     dragmode: 'pan',
     sliders: [
             {
@@ -40,7 +42,7 @@ const initialLayout = (activeLevel) => {
             currentvalue: {
                 visible: true,
                 prefix: 'Zoom: ',
-                xanchor: 'center',
+                //xanchor: 'center',
                 font: {
                     size: 12
                 }
@@ -50,6 +52,7 @@ const initialLayout = (activeLevel) => {
     ]
     };
 }
+
 
 document.addEventListener("DOMContentLoaded", () => {
     const graphContainer = document.getElementById("graphContainer"); // Parent container for all graphs
@@ -72,35 +75,52 @@ document.addEventListener("DOMContentLoaded", () => {
             //console.log('toggle is checked')
             return `${[node.pos]}`;
         } else {
+            if (node.hasOwnProperty('occurrences') && node.occurrences > 1) {
             //console.log('toggle is not checked')
-            return `${node.text}`;
+            return `${node.text} (${node.occurrences})`;
+            }
+            else {
+                return `${node.text}`
+            }
         }
     };
     // Function to traverse the graph and extract nodes and edges
-    const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth=0) => {
-        nodes.push({ id: node.id, zero: ZeroCheckbox.checked ? (node.tag === 0) : false, text: text_for_node(node), x: x, y: y, tag: node.tag});
-        
-        const children = Array.isArray(node.children) ? node.children : [];
-        const childYStart = y - 50
-        
-        const baseChildXOffset = 100
-        let childXOffset = baseChildXOffset / (1 + depth * 10) //decrease with depth
+// Function to traverse the graph and extract nodes and edges
+// Function to traverse the graph and extract nodes and edges
+const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
+    // Add the current node
+    nodes.push({ 
+        id: node.id, 
+        zero: ZeroCheckbox.checked ? (node.tag === 0) : false, 
+        text: text_for_node(node), 
+        x: x, 
+        y: y, 
+        tag: node.tag
+    });
 
-        const totalChildHeight = (children.length - 1) * childXOffset;
-        let childXStart = x - totalChildHeight / 2;
+    // Get children of the current node
+    const children = Array.isArray(node.children) ? node.children : [];
+    const childXStart = x + 200; // Horizontal spacing between levels
 
-        children.forEach(child => {
-            const edge = { source: node.id, target: child.id};
-            if (ZeroCheckbox.checked) {
-                edge.zero = (node.tag === 0 || child.tag === 0);
-            } else {
-                edge.zero = false
-            }
-            edges.push(edge);
-            extractNodesAndEdges(child, nodes, edges, childXStart, childYStart, depth+1);
-            childXStart += childXOffset;
-        });
-    }
+    const baseChildYOffset = 100; // Base vertical spacing
+    const childYOffset = baseChildYOffset / (1 + depth * 5); // Decreases with depth
+
+    // Calculate starting Y position for children
+    const totalChildHeight = (children.length - 1) * childYOffset; 
+    let childYStart = y - totalChildHeight / 2; // Center children around the current node
+
+    // Traverse children
+    children.forEach(child => {
+        const edge = { source: node.id, target: child.id };
+        edge.zero = ZeroCheckbox.checked ? (node.tag === 0 || child.tag === 0) : false;
+        edges.push(edge);
+
+        // Recursive call for each child with updated depth
+        extractNodesAndEdges(child, nodes, edges, childXStart, childYStart, depth + 1);
+        childYStart += childYOffset; // Move to the next sibling's position
+    });
+};
+
     const displayNodes = (activeLevel) => {
         const existingContainers = document.querySelectorAll(".graphContextContainer");
         existingContainers.forEach(container => container.remove());
@@ -181,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 type: 'scatter',
                 textposition: 'top center',  
-                hoverinfo: 'text' 
+                hoverinfo: 'none' 
             };
 
             // Define edges for Plotly
@@ -197,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 hoverinfo: 'none'
             };
 
-            // Add each edge as a line segment between source and target nodes
+            //Add each edge as a line segment between source and target nodes
             edges.forEach(edge => {
                 if (!edge.zero) {
                     const sourceNode = nodes.find(node => node.id === edge.source);
@@ -212,12 +232,12 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Plotly layout configuration
             const layout = initialLayout(activeLevel)
-            // Define zoom levels and slider steps
-            const zoomLevels = [1, 5, 10, 20, 40, 80, 160, 320]; // Different zoom levels (scale factors)
+            // Define zoom levels and slider     steps
+            const zoomLevels = [5, 10, 20, 40, 80, 160]; // Different zoom levels (scale factors)
             zoomLevels.forEach((scale) => {
                 layout.sliders[0].steps.push({
                     method: 'relayout',
-                    args: ['xaxis.range', [- 10000 / scale, 10000 / scale]], // Adjust range based on scale
+                    args: ['xaxis.range', [- 10000 / scale, 30000 / scale]], // Adjust range based on scale
                     label: `x${scale}`
                 });
             });
@@ -225,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Plotly.newPlot(graphDiv, [edgeTrace, nodeTrace], layout, config);
                     });
                 }
-    displayNodes(2)
+    displayNodes(3)
 
     var omitPOS = [97, 99, 101, 102, 103]
 
@@ -250,5 +270,4 @@ document.addEventListener("DOMContentLoaded", () => {
         displayNodes(activeLevel);
     });
 });
-
 

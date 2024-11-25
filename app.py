@@ -47,11 +47,16 @@ def get_joint(n):
     graphs = [json.loads(graph) for graph in graphs]
     graphs = get_joint_parse_tree(graphs, is_merge=False)
     graph = json.dumps(graphs)
-    return render_template("joint.html", 
+    return render_template("feature-joint.html", 
+                        n=n,
                         graphs=[graph], 
                         contexts=[], 
                         statistics=[],
                         activation_dicts=[])
+
+@app.route('/cytoscape', methods=['GET'])
+def get_cytoscape():
+    return render_template("cytoscape.html")
 
 @app.route('/merged/<int:n>', methods=['GET'])
 def get_merged(n):
@@ -63,9 +68,9 @@ def get_merged(n):
     # depths = [get_total_occurrences(tree) for tree in merged]
     # merged = sorted(zip(merged, depths), key=lambda x:x[1], reverse=True)
     # merged = [x[0] for x in merged]
-    print(graphs)
     graph = json.dumps(get_joint_parse_tree(graphs, is_merge=True))
-    return render_template("joint.html", 
+    return render_template("feature-merge.html", 
+                        n=n,
                         graphs=[graph], 
                         contexts=[], 
                         statistics=[],
@@ -80,7 +85,8 @@ def get_graph(n):
         'num_activations': 0,
         'pos_pcts': {}}
     
-    return render_template("features.html", 
+    return render_template("feature-context.html", 
+                           n=n,
                            graphs=graphs, 
                            contexts=contexts, 
                            statistics=statistics,

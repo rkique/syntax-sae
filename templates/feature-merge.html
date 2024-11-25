@@ -83,7 +83,7 @@
         var statistics = {{ statistics | tojson }}
         graphs = graphs.map(jsonString => JSON.parse(jsonString));
     </script>
-    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='merge_scripts.js') }}"></script>
 </head>
 <body>
     <label>
@@ -94,33 +94,7 @@
         <input type="checkbox" id="toggleZeroFormat" checked>
         Prune Unactive
     </label>
-    <label>
-        <input type="checkbox" id="toggleOmitPOS" checked>
-        Omit Misc. POS
-    </label>
-    <!-- <div class="category-row">
-    <div id="pos84"> ADJ </div>
-    <div id="pos85"> ADP </div>
-    <div id="pos86"> ADV </div>
-    <div id="pos87"> AUX </div>
-    <div id="pos88"> CONJ </div>
-    <div id="pos89"> CCONJ </div>
-    <div id="pos90"> DET </div>
-    <div id="pos91"> INTJ </div>
-    <div id="pos92"> NOUN </div>
-    <div id="pos93"> NUM </div>
-    <div id="pos94"> PART </div>
-    <div id="pos95"> PRON </div>
-    <div id="pos96"> PROPN </div>
-    <div id="pos97"> PUNCT </div>
-    <div id="pos98"> SCONJ </div>
-    <div id="pos99"> SYM </div>
-    <div id="pos100"> VERB </div>
-    <div id="pos101"> X </div>
-    <div id="pos102"> EOL </div>
-    <div id="pos103"> SPACE </div>
-    </div> -->
-
+    {% include 'header.html' %}
     <div id="content">
     <div id="graphContainer" width="100%; height: 100%"></div>
     </div>

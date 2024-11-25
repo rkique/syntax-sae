@@ -1,0 +1,39 @@
+<style>
+            h1 {
+            display: inline;
+        }
+</style>
+
+<div> 
+    <h1 id="feature_id" data-feature-id="{{n}}">{{n}}</h1>
+    <h1><a id="contexts-link" href="#">Contexts</a></h1>
+    <h1><a id="joint-link" href="#">Joint</a></h1>
+    <h1><a id="merged-link" href="#">Merged</a></h1>
+
+    <script>
+        // Extract the feature ID from the 'feature_id' element
+        const featureIdElement = document.getElementById('feature_id');
+        const feature_id = featureIdElement.getAttribute('data-feature-id') || featureIdElement.textContent.trim();
+    
+        // Dynamically set the hrefs for the links
+        document.getElementById('contexts-link').href = `/features/${feature_id}`;
+        document.getElementById('joint-link').href = `/joint/${feature_id}`;
+        document.getElementById('merged-link').href = `/merged/${feature_id}`;
+    </script>
+    
+    <!-- <h1><a href="/features/{{n}}">Contexts</a></h1>
+    <h1><a href="/joint/{{n}}">Joint</a></h1>
+    <h1><a href="/merged/{{n}}">Merged</a></h1> -->
+    <label>
+        <input type="checkbox" id="toggleIdFormat">
+        POS
+    </label>
+    <label>
+        <input type="checkbox" id="toggleZeroFormat" checked>
+        Prune Unactive
+    </label>
+    <label>
+        <input type="checkbox" id="toggleOmitPOS" checked>
+        Omit Misc. POS
+    </label>
+</div>

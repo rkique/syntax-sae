@@ -252,6 +252,7 @@ def merge_trees(trees: list[dict]) -> list[dict]:
                           if (soft_match(child,new_child))), None)
             if match:
                 match['occurrences'] += 1
+                match['tag'] = match['tag'] + new_child['tag']
                 #print(f'{new_child["text"]} matched with {match["text"]}')
                 #this is match on subsequent level.
                 merge_children(match['children'], new_child['children'])
@@ -267,6 +268,7 @@ def merge_trees(trees: list[dict]) -> list[dict]:
         match = next((t for t in all_nodes if soft_match(t,tree)), None)
         if match:
             match['occurrences'] += 1
+            match['tag'] = match['tag'] + tree['tag']
             #print(f'{tree["text"]} matched with {match["text"]}')
             merge_children(match['children'], tree['children'])
         else:
@@ -486,8 +488,8 @@ def get_joint_parse_tree(parse_trees, is_merge=False):
         "occurrences": 100,
         "children": combined_children  # Append all the children
     }
-    if is_merge:
-        combined_root_node = get_common_nodes(combined_root_node)
+    # if is_merge:
+    #     combined_root_node = get_common_nodes(combined_root_node)
     return combined_root_node
 
 #Given activations over contexts, returns activations
