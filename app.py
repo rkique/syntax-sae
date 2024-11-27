@@ -101,7 +101,7 @@ def get_activations(n):
 
 @app.route('/')
 def index():    
-    points = np.load('pos_map.npy')
+    points = np.loadtxt('pos_map.npy')
     # Prepare data for visualization
     scatter_data = [
         {

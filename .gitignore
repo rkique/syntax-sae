@@ -4,3 +4,4 @@ sae-auto-interp/*
 __pycache__
 env
 feature_graphs.db
+*.ipynb

@@ -120,11 +120,11 @@ def make_parse_tree(context: list[str], doc : spacy.tokens.Doc, positions: list[
     root_node = next(node for node in list(doc)[::-1] if node.dep_ == "ROOT")
     return root_node
 
-#This calls node_to_dict.
+#Given a root node representing a parse tree, return a list of all active subtrees.
 def node_to_active_dicts(tree : list[dict]) -> list[dict]:
     active_nodes = []
     for node in get_active_nodes(tree):
-        #remove inactive nodes from recursive dictionary 
+        #remove inactive nodes
         def remove_inactive(node):
             def traverse(node):
                 if node['children'] is None:
@@ -135,39 +135,37 @@ def node_to_active_dicts(tree : list[dict]) -> list[dict]:
             traverse(node)
             return node
         
-        #get all children of recursive dictionary
-        def get_all_children(node):
+        def get_all_children(node: dict) -> list[dict]:
             all_children = []
             for child in node['children']:
                 all_children.append(child)
                 all_children.extend(get_all_children(child))
             return all_children
         
-        #remove inactive nodes from the node
         node = remove_inactive(node)
-        #add the node to active_nodes if it is not already present
         children = [child for node in active_nodes for child in get_all_children(node)]
         if node not in children:
             active_nodes.append(node)
     return active_nodes
 
-#get all children of a node
-def get_all_children(node):
+#Given a root node representing a parse tree, return a list of all children
+def get_all_children(node: dict) -> list[dict]:
     all_children = []
     for child in node['children']:
         all_children.append(child)
         all_children.extend(get_all_children(child))
     return all_children
 
-def get_all_childrens(nodes):
+#Given a list of root nodes representing parse trees, return a list of all children
+def get_all_childrens(nodes : list[dict]) -> list[dict]:
     all_children = []
     for node in nodes:
         all_children.extend(get_all_children(node))
     return all_children
 
-#this shouldn't really need to use the original spacy nodes.
-# extract all children which activate.
+#
 def get_active_nodes(root_node) -> list:
+    #add node to result if it is not already in result or a subtree.
     result = []
     def traverse(node) -> None:
         if node['tag'] > 0:
@@ -245,7 +243,7 @@ def merge_trees(trees: list[dict]) -> list[dict]:
         return is_match
     
     #matches or appends new children to existing.
-    def merge_children(target_children, new_children):
+    def merge_children(target_children: list[dict], new_children: list[dict]) -> None:
         #check each child for match.
         for new_child in new_children:
             match = next((child for child in target_children \
@@ -253,7 +251,6 @@ def merge_trees(trees: list[dict]) -> list[dict]:
             if match:
                 match['occurrences'] += 1
                 match['tag'] = match['tag'] + new_child['tag']
-                #print(f'{new_child["text"]} matched with {match["text"]}')
                 #this is match on subsequent level.
                 merge_children(match['children'], new_child['children'])
             else: #target_children and new_children should have same depth.
@@ -262,21 +259,19 @@ def merge_trees(trees: list[dict]) -> list[dict]:
     trees = [initialize_occurrences(tree) for tree in trees]
     merged_trees = []
     for tree in trees:
-        #this will add a tree if top node does not match an portion of an existing tree.
         all_nodes = [child for node in merged_trees for child in get_all_children(node)]
-        #looks through each subtree to match the current tree
+        #looks through each existing subtree on stack to match current trees
         match = next((t for t in all_nodes if soft_match(t,tree)), None)
         if match:
             match['occurrences'] += 1
             match['tag'] = match['tag'] + tree['tag']
-            #print(f'{tree["text"]} matched with {match["text"]}')
             merge_children(match['children'], tree['children'])
         else:
             merged_trees.append(tree)
     return merged_trees
 
-#node_to_dict
-def node_to_dict(token):
+#Converts a spacy.tokens.Token and its entire dependency tree to a dictionary
+def node_to_dict(token: spacy.tokens.Token) -> dict:
     node_id = 0
     def _node_to_dict(token):
         nonlocal node_id
@@ -323,7 +318,7 @@ def jsonify(root_token):
 def ttnp(tensor):
     return tensor.detach().cpu().item()
 
-#Returns position-activation dicts by number of features.
+#Returns position-activation dicts by number of activations on a particular feature.
 def batch_dicts(n, activations, locations, k=12):
     total_batches = TOTAL_BATCHES
     batch_dicts = [{'i': i, 'positions': [], 'activations': []} for i in range(0, total_batches + 1)]
@@ -335,7 +330,7 @@ def batch_dicts(n, activations, locations, k=12):
     #sort by max activation
     batchdict_tuple = [(d, max(d['activations']) if d['activations'] else float('-inf')) for d in batch_dicts]
     sorted_tuples = sorted(batchdict_tuple, key=lambda x: x[1], reverse=True)[:k]
-    top_n_dicts = [d for d, _ in sorted_tuples[:n]]
+    top_n_dicts = [d for d, _ in sorted_tuples]
     return top_n_dicts
 
 def get_sentence_at_index(doc, char_index):
@@ -548,7 +543,7 @@ def visualize_feature(n, activations,
         token_context = batch[start_idx:end_idx]
         parse_tree = make_parse_tree(token_context, sent,
                                      filtered_positions, filtered_activations)
-        parse_trees.append(parse_tree)
+        parse_trees.append(jsonify(parse_tree))
         contexts.append(batch[start_idx:end_idx])
         activation_dicts.append(activation_dict)
 

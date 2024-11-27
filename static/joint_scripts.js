@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const childYStart = y - 50
         
         const baseChildXOffset = 100
-        let childXOffset = baseChildXOffset / (1 + depth * 10) //decrease with depth
+        let childXOffset = baseChildXOffset / (1 + depth * 3) //decrease with depth
 
         const totalChildHeight = (children.length - 1) * childXOffset;
         let childXStart = x - totalChildHeight / 2;

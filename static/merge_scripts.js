@@ -1,6 +1,8 @@
 
 let activeLevel = 1;
 let HEIGHT = 800
+let yMin = -10000
+let yMax = 2000
 
 const initialLayout = (activeLevel) => {
     return {
@@ -11,6 +13,7 @@ const initialLayout = (activeLevel) => {
         showgrid: true,
         zeroline: false,
         showticklabels: false,
+        fixedrange: true,
         title: '', // You can add titles if needed
         automargin: true, // Automatically adjust margins
         range: [-1000, 3000]
@@ -18,10 +21,10 @@ const initialLayout = (activeLevel) => {
     yaxis: {
         showgrid: false,
         zeroline: false,
-        showticklabels: false,
+        showticklabels: true,
         title: '', // You can add titles if needed
-        fixedrange: true,
-        automargin: true // Automatically adjust margins
+        automargin: true, // Automatically adjust margins
+        range: [yMin,yMax],
     },
     showlegend: false,
     margin: {
@@ -84,11 +87,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     };
-    // Function to traverse the graph and extract nodes and edges
-// Function to traverse the graph and extract nodes and edges
-// Function to traverse the graph and extract nodes and edges
+
 const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
-    // Add the current node
+    // Start: put root at (0, 0)
+    if (depth == 1){
+    console.log(x,y, depth)
+    }
     nodes.push({ 
         id: node.id, 
         zero: ZeroCheckbox.checked ? (node.tag === 0) : false, 
@@ -100,24 +104,21 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
 
     // Get children of the current node
     const children = Array.isArray(node.children) ? node.children : [];
-    const childXStart = x + 200; // Horizontal spacing between levels
-
-    const baseChildYOffset = 100; // Base vertical spacing
-    const childYOffset = baseChildYOffset / (1 + depth * 5); // Decreases with depth
-
-    // Calculate starting Y position for children
+    const childXStart = x + 200; 
+    const baseChildYOffset = 300; 
+    const childYOffset = baseChildYOffset / (1 + depth * 3); 
     const totalChildHeight = (children.length - 1) * childYOffset; 
-    let childYStart = y - totalChildHeight / 2; // Center children around the current node
-
-    // Traverse children
+    let childYStart = (y - totalChildHeight / 2); // Center children around the current node
+    if (depth == 0){
+        childYStart *= 2
+    }
     children.forEach(child => {
         const edge = { source: node.id, target: child.id };
         edge.zero = ZeroCheckbox.checked ? (node.tag === 0 || child.tag === 0) : false;
         edges.push(edge);
-
         // Recursive call for each child with updated depth
         extractNodesAndEdges(child, nodes, edges, childXStart, childYStart, depth + 1);
-        childYStart += childYOffset; // Move to the next sibling's position
+        childYStart += childYOffset;
     });
 };
 
@@ -125,13 +126,11 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
         const existingContainers = document.querySelectorAll(".graphContextContainer");
         existingContainers.forEach(container => container.remove());
     
-        // Iterate over each graph in the graphs array
         graphs.forEach((graph, index) => {
             console.log('resetting nodes')
             var nodes = [];
             var edges = [];
 
-            // Start extraction from the root node
             idCounter = 0
             assignUniqueIds(graph);
             extractNodesAndEdges(graph, nodes, edges);
@@ -139,13 +138,9 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
             const maxTagValue = Math.max(...nodes.map(node => node.tag));
 
             const getColorGradient = (node) => {
-                // const keywords = ['recalls', 'recall', 'Recall', 'recalls', 'Recalled', 'Recalls', 'recalling', 'recalled']
-                // if (keywords.includes(node.text)){
-                //     return `rgb(255, 255, 0)`;
-                // }
-                const startColor = { r: 255, g: 255, b: 255 }; // Orange for tag 1
-                const endColor = { r: 0, g: 0, b: 255 }; // Blue for tag 0
-                const ratio = maxTagValue > 0 ? node.tag / maxTagValue : 0; // Avoid division by zero
+                const startColor = { r: 255, g: 255, b: 255 };1
+                const endColor = { r: 0, g: 0, b: 255 };
+                const ratio = maxTagValue > 0 ? node.tag / maxTagValue : 0; 
                 
                 const clampedRatio = Math.max(0, Math.min(1, ratio));
                 const r = Math.round(startColor.r + clampedRatio * (endColor.r - startColor.r));
@@ -162,23 +157,7 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
             graphDiv.id = `graphDiv-${index}`;
             graphDiv.classList.add("graphDiv"); 
             graphContextContainer.appendChild(graphDiv);
-
-            // const contextDiv = document.createElement("div");
-            // contextDiv.id = `contextDiv-${index}`;
-            // contextDiv.classList.add("contextDiv"); 
-            // activationDict = activation_dicts[index]
-            // console.log(activationDict)
-            // const maxActivation = 100;
-            
-            // Create the context with color highlighting
-            // contextDiv.innerHTML = contexts[index].map((word, index) => {
-            //     const activation = activationDict[index] || 0;
-            //     const blueIntensity = Math.round((activation / maxActivation) * 255);
-            //     const color = `rgb(${255 - blueIntensity}, ${255 - blueIntensity}, 255)`;
-            //     const textColor = blueIntensity > 127 ? "white" : "black";
-            //     return `<span style="background-color: ${color}; color: ${textColor}; padding: 2px;">${word}</span>`;
-            // }).join(" ");
-
+           
             // graphContextContainer.appendChild(contextDiv);
             graphContainer.appendChild(graphContextContainer);
 
@@ -204,7 +183,6 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
                 hoverinfo: 'none' 
             };
 
-            // Define edges for Plotly
             const edgeTrace = {
                 x: [],
                 y: [],
@@ -217,7 +195,6 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
                 hoverinfo: 'none'
             };
 
-            //Add each edge as a line segment between source and target nodes
             edges.forEach(edge => {
                 if (!edge.zero) {
                     const sourceNode = nodes.find(node => node.id === edge.source);
@@ -232,12 +209,11 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
             
             // Plotly layout configuration
             const layout = initialLayout(activeLevel)
-            // Define zoom levels and slider     steps
-            const zoomLevels = [5, 10, 20, 40, 80, 160]; // Different zoom levels (scale factors)
+            const zoomLevels = [0.5, 1, 2, 4, 8, 16]; 
             zoomLevels.forEach((scale) => {
                 layout.sliders[0].steps.push({
                     method: 'relayout',
-                    args: ['xaxis.range', [- 10000 / scale, 30000 / scale]], // Adjust range based on scale
+                    args: ['yaxis.range', [yMin / scale, yMax / scale]],
                     label: `x${scale}`
                 });
             });
@@ -247,12 +223,11 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
                 }
     displayNodes(3)
 
-    var omitPOS = [97, 99, 101, 102, 103]
-
     // OmitCheckbox.addEventListener('change', () => {
     //     omitPOS = OmitCheckbox.checked ? [97, 99, 101, 102, 103] : []
     //     applyHighlighting(statistics, omitPOS)
     // });
+    
     graphDiv = document.getElementById(`graphDiv-0`)
     graphDiv.on('plotly_sliderchange', (eventData) => {
         // Access the updated layout from the event data

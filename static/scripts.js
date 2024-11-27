@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
             contextDiv.id = `contextDiv-${index}`;
             contextDiv.classList.add("contextDiv"); 
             activationDict = activation_dicts[index]
-            console.log(activationDict)
+            //console.log(activationDict)
             const maxActivation = Math.max(...Object.values(activationDict));
             
             // Create the context with color highlighting

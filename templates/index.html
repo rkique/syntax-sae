@@ -25,6 +25,8 @@
 <body>
     <div id="left-panel">
         <h1>Gemma-9b Layer 11 Features</h1>
+        <p>This is a UMAP in the feature space of the decoder: next steps are to add the Part of Speech tag in the hover.<br>
+        Click a feature to view its contexts in three different ways: regular, joint, and merged.</p>
         <div id="mode">
             <label for="dropdown"></label>
             <select id="dropdown" name="dropdown">
@@ -51,7 +53,7 @@
             y: y,
             mode: 'markers',
             type: 'scatter',
-            marker: { size: 10, color: 'blue' },
+            marker: { size: 2, color: 'blue' },
             text: links, 
             hovertemplate: 'Go to %{text}'
         };
