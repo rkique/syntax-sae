@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const graphDiv = document.createElement("div");
             graphDiv.id = `graphDiv-${index}`;
             graphDiv.classList.add("graphDiv"); 
-            graphContextContainer.appendChild(graphDiv);
+            //graphContextContainer.appendChild(graphDiv);
 
             const contextDiv = document.createElement("div");
             contextDiv.id = `contextDiv-${index}`;

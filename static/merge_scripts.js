@@ -1,11 +1,12 @@
 
 let activeLevel = 1;
 let HEIGHT = 800
-let yMin = -10000
-let yMax = 2000
+let yMin = -5000 / 4
+let yMax = 500 / 4
 
-const initialLayout = (activeLevel) => {
+const initialLayout = (activeLevel, backgroundShapes) => {
     return {
+    shapes: backgroundShapes,
     font: {
         size: 8 // Font size for the title
     },
@@ -13,7 +14,6 @@ const initialLayout = (activeLevel) => {
         showgrid: true,
         zeroline: false,
         showticklabels: false,
-        fixedrange: true,
         title: '', // You can add titles if needed
         automargin: true, // Automatically adjust margins
         range: [-1000, 3000]
@@ -172,15 +172,37 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
             const nodeTrace = {
                 x: x,
                 y: y,
-                text: nodeIds,  // Labels for each node
-                mode: 'markers+text',
-                marker: {
-                    size: 10,
-                    color: nodeColors,
-                },
+                text: nodeIds.map((id, index) => `<span style="background-color: ${nodeColors[index]};">${id}</span>`), // Dynamic color per id
+                mode: 'text',
+                // marker: {
+                //     size: 10,
+                //     color: nodeColors,
+                // },
                 type: 'scatter',
-                textposition: 'top center',  
+                textposition: 'center',  
                 hoverinfo: 'none' 
+            };
+
+            // Define a function to create rectangles as text backgrounds
+            const createBackgroundShapes = (x, y, nodeIds, nodeColors, textFontSize) => {
+                const rectBuffer = textFontSize * 0.1; // Adjust buffer size (proportional to font size)
+                const charWidth = textFontSize * 0.6; // Approximate width per character
+                const textHeight = textFontSize * 1.2; // Approximate height of text
+
+                return nodeIds.map((id, index) => ({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'y',
+                    x0: x[index] - (charWidth * id.length) / 2 - rectBuffer, // Left boundary
+                    x1: x[index] + (charWidth * id.length) / 2 + rectBuffer, // Right boundary
+                    y0: y[index] - textHeight / 2 - rectBuffer,              // Bottom boundary
+                    y1: y[index] + textHeight / 2 + rectBuffer,              // Top boundary
+                    fillcolor: nodeColors[index], // Match node color
+                    opacity: 0.5,                // Background transparency
+                    line: {
+                        width: 0                // No border
+                    }
+                }));
             };
 
             const edgeTrace = {
@@ -206,22 +228,29 @@ const extractNodesAndEdges = (node, nodes, edges, x = 0, y = 0, depth = 0) => {
             const config = {
                 displayModeBar: false // Disables the modebar
             };
-            
+
+            const textFontSize = 12; // Same font size as in node trace
+            const backgroundShapes = createBackgroundShapes(x, y, nodeIds, textFontSize, nodeColors);
+
             // Plotly layout configuration
-            const layout = initialLayout(activeLevel)
-            const zoomLevels = [0.5, 1, 2, 4, 8, 16]; 
-            zoomLevels.forEach((scale) => {
-                layout.sliders[0].steps.push({
-                    method: 'relayout',
-                    args: ['yaxis.range', [yMin / scale, yMax / scale]],
-                    label: `x${scale}`
-                });
-            });
+            const layout = initialLayout(activeLevel, backgroundShapes)
+            // const zoomLevels = [0.5, 1, 2, 4, 8, 16]; 
+            //this slider should update y axis around the current level.
+            // zoomLevels.forEach((scale) => {
+            //     console.log(`${layout.sliders[0].currentvalue}`)
+            //     layout.sliders[0].steps.push(
+            //         {
+            //         method: 'relayout',
+            //         args: ['yaxis.range', [-5000, 1000]],
+            //         label: `x${scale}`
+            //     }
+            //     );
+            // });
             // Plot the graph with the slider
-            Plotly.newPlot(graphDiv, [edgeTrace, nodeTrace], layout, config);
+            Plotly.newPlot(graphDiv, [nodeTrace, edgeTrace], layout, config);
                     });
                 }
-    displayNodes(3)
+    displayNodes(4)
 
     // OmitCheckbox.addEventListener('change', () => {
     //     omitPOS = OmitCheckbox.checked ? [97, 99, 101, 102, 103] : []

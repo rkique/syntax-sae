@@ -180,6 +180,18 @@ def get_active_nodes(root_node) -> list:
     traverse(root_node)
     return result
 
+def total_activation(node):
+    def traverse(node):
+        total = 0
+        if node['tag'] > 0:
+            total += node['tag']
+        if node['children'] is None:
+            return total
+        for child in node['children']:
+            total += traverse(child)
+        return total
+    return traverse(node)
+
 def has_common_child(node):
     def traverse(node):
         if node['occurrences'] > 1:
@@ -234,17 +246,18 @@ def merge_trees(trees: list[dict]) -> list[dict]:
             all_children.extend(get_all_children(child))
         return all_children
 
+    #Matches two nodes by their lemma
+    #TODO: update to display word forms.
     def soft_match(node1, node2):
         # return str1 == str2
         is_match = node1['lemma'].lower().strip() == \
             node2['lemma'].lower().strip()
-        if is_match:
-            print(f'{node1["text"]} {node2["text"]}')
+        # if is_match:
+            #print(f'{node1["text"]} {node2["text"]}')
         return is_match
     
     #matches or appends new children to existing.
     def merge_children(target_children: list[dict], new_children: list[dict]) -> None:
-        #check each child for match.
         for new_child in new_children:
             match = next((child for child in target_children \
                           if (soft_match(child,new_child))), None)
@@ -260,7 +273,7 @@ def merge_trees(trees: list[dict]) -> list[dict]:
     merged_trees = []
     for tree in trees:
         all_nodes = [child for node in merged_trees for child in get_all_children(node)]
-        #looks through each existing subtree on stack to match current trees
+        #looks through each existing subtree to match current trees
         match = next((t for t in all_nodes if soft_match(t,tree)), None)
         if match:
             match['occurrences'] += 1
@@ -268,6 +281,7 @@ def merge_trees(trees: list[dict]) -> list[dict]:
             merge_children(match['children'], tree['children'])
         else:
             merged_trees.append(tree)
+    #sort by total activation.
     return merged_trees
 
 #Converts a spacy.tokens.Token and its entire dependency tree to a dictionary

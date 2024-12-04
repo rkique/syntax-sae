@@ -2,7 +2,7 @@
 from flask import Flask, json, render_template
 from graphs import load_tokens, load_activations, visualize_feature, visualize_feature_flat
 from graphs import merged_parse_trees, get_total_occurrences
-from graphs import get_joint_parse_tree, jsonify, context_to_dict
+from graphs import get_joint_parse_tree, jsonify, context_to_dict, total_activation
 from graphs import get_statistics
 import sqlite3
 import networkx as nx
@@ -64,6 +64,7 @@ def get_merged(n):
     #graphs = [json.loads(graph) for graph in graphs]
     graphs = [context_to_dict(context, activation_dict) for context, activation_dict in zip(contexts, activation_dicts)]
     graphs = merged_parse_trees(graphs)
+    graphs = sorted(graphs, key=lambda x: total_activation(x))
     # merged = merged_parse_trees(graphs) #merged is list of dicts
     # depths = [get_total_occurrences(tree) for tree in merged]
     # merged = sorted(zip(merged, depths), key=lambda x:x[1], reverse=True)
